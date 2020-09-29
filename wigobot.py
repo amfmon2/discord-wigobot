@@ -1,6 +1,6 @@
 import discord
 import pwread
-from discord.ext import commands, buttons
+from discord.ext import commands, buttons, tasks
 from datetime import datetime, timedelta
 from apscheduler.schedulers.asyncio import AsyncIOScheduler
 import pymongo
@@ -48,6 +48,7 @@ class Reminder:
         msg = "<@" + str(self.user.id) + "> " + self.max_time_msg
         await self.ctx.send(msg)
 
+
 class Session(buttons.Session):
     def __init__(self, _min_minutes, min_time, min_time_msg, _max_minutes, max_time, max_time_msg, user, ctx):
         self._min_minutes = _min_minutes
@@ -70,6 +71,111 @@ class Session(buttons.Session):
         self.min_time = current_time + timedelta(minutes = self._min_minutes, hours = gcm_hour_adjustment)
         self.max_time = current_time + timedelta(minutes = self._max_minutes, hours = gcm_hour_adjustment)
         await self.add_reminder()
+
+
+class SendGuildLineup(buttons.Paginator):
+    def __init__(self, message, gvg_dict, *args, **kwargs):
+        self.message = message
+        self.gvg_dict = gvg_dict
+        super().__init__(*args, **kwargs)
+
+    def checkAttendance(self, job, member):
+        content = None
+        char = "<@" + str(member.id) + ">"
+        checkChar = [key for key, value in self.gvg_dict.items() if char in value]
+        if checkChar != []:
+            for charCount in checkChar:
+                self.gvg_dict[charCount].remove(char)
+ 
+        self.gvg_dict[job].append(char)
+        content = "GvG Lineup:"
+        for job_class in self.gvg_dict:
+            if self.gvg_dict[job_class] != []:
+                stringLineup = ', '.join(map(str, self.gvg_dict[job_class]))
+                content += "\n" + job_class + ": " + stringLineup
+
+        return(content)
+
+    @buttons.button(emoji='🥵')
+    async def olp(self, ctx, member):
+        content = self.checkAttendance('OLP Professor', member)
+        await self.message.edit(content=content)
+
+    @buttons.button(emoji='🧬')
+    async def ddcreo(self, ctx, member):
+        content = self.checkAttendance('DD Creator', member)
+        await self.message.edit(content=content)
+
+    @buttons.button(emoji='🎭')
+    async def ddstalker(self, ctx, member):
+        content = self.checkAttendance('DD Stalker', member)
+        await self.message.edit(content=content)
+
+    @buttons.button(emoji='🧙')
+    async def ddhw(self, ctx, member):
+        content = self.checkAttendance('DD High Wizard', member)
+        await self.message.edit(content=content)
+
+    @buttons.button(emoji='🎻')
+    async def clown(self, ctx, member):
+        content = self.checkAttendance('Bragi Clown', member)
+        await self.message.edit(content=content)
+
+    @buttons.button(emoji='🥶')
+    async def dlp(self, ctx, member):
+        content = self.checkAttendance('DLP Professor', member)
+        await self.message.edit(content=content)
+
+    @buttons.button(emoji='🧚')
+    async def fshw(self, ctx, member):
+        content = self.checkAttendance('FS High Wizard', member)
+        await self.message.edit(content=content)
+
+    @buttons.button(emoji='🧪')
+    async def sppcreo(self, ctx, member):
+        content = self.checkAttendance('SPP Creator', member)
+        await self.message.edit(content=content)
+
+    @buttons.button(emoji='🏹')
+    async def sniper(self, ctx, member):
+        content = self.checkAttendance('Sniper', member)
+        await self.message.edit(content=content)
+
+    @buttons.button(emoji='🧽')
+    async def devo(self, ctx, member):
+        content = self.checkAttendance('Devo Paladin', member)
+        await self.message.edit(content=content)
+
+    @buttons.button(emoji='🤜')
+    async def champ(self, ctx, member):
+        content = self.checkAttendance('Champ', member)
+        await self.message.edit(content=content)
+
+    @buttons.button(emoji='🧖')
+    async def gypsy(self, ctx, member):
+        content = self.checkAttendance('Gypsy', member)
+        await self.message.edit(content=content)
+
+    @buttons.button(emoji='⛪')
+    async def highp(self, ctx, member):
+        content = self.checkAttendance('High Priest', member)
+        await self.message.edit(content=content)
+
+    @buttons.button(emoji='🍭')
+    async def linker(self, ctx, member):
+        content = self.checkAttendance('Linker', member)
+        await self.message.edit(content=content)
+
+    @buttons.button(emoji='🙈')
+    async def otherclass(self, ctx, member):
+        content = self.checkAttendance('Other Class', member)
+        await self.message.edit(content=content)
+
+    @buttons.button(emoji='💩')
+    async def notgoing(self, ctx, member):
+        content = self.checkAttendance('Not Going', member)
+        await self.message.edit(content=content)
+
 
 def mvp_query(ctx, mvp):
     results = None
@@ -158,10 +264,54 @@ async def spot(ctx, time, *, mvp):
     else:
         await ctx.send("No MVPs found with that name. Please try again.")
 
+async def call_lineup(ctx):
+    gvg_recruit_msg = 'Click  🥵  for OLP Professor'
+    gvg_recruit_msg += '\nClick  🧬  for DD Creator'
+    gvg_recruit_msg += '\nClick  🎭  for DD Stalker'
+    gvg_recruit_msg += '\nClick  🧙  for DD High Wizard'
+    gvg_recruit_msg += '\nClick  🎻  for Bragi Clown'
+    gvg_recruit_msg += '\nClick  🥶  for DLP Professor'
+    gvg_recruit_msg += '\nClick  🧚  for FS High Wizard'
+    gvg_recruit_msg += '\nClick  🧪  for SPP Creator'
+    gvg_recruit_msg += '\nClick  🏹  for Sniper'
+    gvg_recruit_msg += '\nClick  🧽  for Devo Paladin'
+    gvg_recruit_msg += '\nClick  🤜  for Champ'
+    gvg_recruit_msg += '\nClick  🧖  for Gypsy'
+    gvg_recruit_msg += '\nClick  ⛪  for High Priest'
+    gvg_recruit_msg += '\nClick  🍭  for Linker'
+    gvg_recruit_msg += '\nClick  🙈  for Other Class'
+    gvg_recruit_msg += '\nClick  💩  for Not Going'
+
+    gvg_dict = {"OLP Professor":[], "DD Creator":[], "DD Stalker":[], "DD High Wizard":[], 
+                "Bragi Clown":[], "DLP Professor":[], "FS High Wizard":[], "SPP Creator":[],
+                "Sniper":[], "Devo Paladin":[], "Champ":[], "Gypsy":[], 
+                "High Priest":[], "Linker":[], "Other Class":[], "Not Going":[]}
+
+    channel = bot.get_channel(742358330969686017) #guild-lineup channel ID
+    message = await channel.send('GvG Lineup:')
+    pagey = SendGuildLineup(message=message, gvg_dict=gvg_dict, title='Emoji List', colour=0xc67862, embed=True, timeout=14400, use_defaults=False,
+                        entries=[gvg_recruit_msg,], length=1, format='**')
+    await pagey.start(ctx)
+
+
+@tasks.loop(seconds = 60)
+async def send_mes():
+    now = datetime.now()
+    woe_discussion = bot.get_channel(719434806554787842) #woe-discussion channel ID
+    if now.strftime("%H:%M") == "14:30" and now.strftime("%A") != 'Saturday':
+        message = await woe_discussion.send('Tara KoE! Sino G?')
+        ctx = await bot.get_context(message)
+        await call_lineup(ctx)
+    elif now.strftime("%H:%M") == "10:00" and now.strftime("%A") == 'Saturday':
+        message = await woe_discussion.send('Tara WoE! Sino G?')
+        ctx = await bot.get_context(message)
+        await call_lineup(ctx)
+
 @bot.event
 async def on_ready():
-	print("Logged in!\n----------\n")
-	print(f"Connected to {len(bot.guilds)} guilds...  {', '.join([e.name for e in bot.guilds])}") 
+    send_mes.start()
+    print("Logged in!\n----------\n")
+    print(f"Connected to {len(bot.guilds)} guilds...  {', '.join([e.name for e in bot.guilds])}") 
 
 @bot.event
 async def on_command_error(ctx, error):
